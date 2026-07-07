@@ -1,0 +1,29 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------< com.eventplatform:wedding-services-backend >-------------
+[INFO] Building wedding-services-backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ wedding-services-backend ---
+[INFO] Deleting E:\Projects\Wedding Project\wedding-services-backend\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ wedding-services-backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.10.1:compile (default-compile) @ wedding-services-backend ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 94 source files to E:\Projects\Wedding Project\wedding-services-backend\target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ wedding-services-backend ---
+[INFO] skip non existing resourceDirectory E:\Projects\Wedding Project\wedding-services-backend\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.10.1:testCompile (default-testCompile) @ wedding-services-backend ---
+[INFO] No sources to compile
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.363 s
+[INFO] Finished at: 2026-06-09T10:27:24+05:30
+[INFO] ------------------------------------------------------------------------
