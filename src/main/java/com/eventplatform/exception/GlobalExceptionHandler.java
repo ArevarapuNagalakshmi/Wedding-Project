@@ -1,6 +1,8 @@
 package com.eventplatform.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -10,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
@@ -17,6 +20,22 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    // 400 – path/param type mismatch (e.g., passing 'my' where Long expected)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String name = ex.getName();
+        String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "";
+        String value = ex.getValue() != null ? ex.getValue().toString() : "";
+        String msg = String.format("Invalid value for parameter '%s': '%s' (expected type: %s)", name, value, requiredType);
+        log.warn("Path/param type mismatch - {}", msg);
+        return ResponseEntity.badRequest().body(Map.of(
+                "error", "invalid_parameter",
+                "message", msg
+        ));
+    }
 
     // 404
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -101,12 +120,15 @@ public class GlobalExceptionHandler {
 
         String message = "Duplicate data";
 
-        if (ex.getMessage().contains("email")) {
-            message = "Email already exists";
-        } else if (ex.getMessage().contains("phone")) {
-            message = "Mobile already registered";
-        } else if (ex.getMessage().contains("aadhaar")) {
-            message = "Aadhaar already registered";
+        if (ex.getMessage() != null) {
+            String lower = ex.getMessage().toLowerCase();
+            if (lower.contains("email")) {
+                message = "Email already exists";
+            } else if (lower.contains("phone")) {
+                message = "Mobile already registered";
+            } else if (lower.contains("aadhaar")) {
+                message = "Aadhaar already registered";
+            }
         }
 
         return ResponseEntity.status(HttpStatus.CONFLICT)

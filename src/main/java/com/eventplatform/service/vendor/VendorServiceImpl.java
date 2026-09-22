@@ -54,6 +54,7 @@ public class VendorServiceImpl implements VendorService {
                 .build();
 
         VendorProfile saved = vendorRepo.save(vendor);
+        vendorRepo.flush();
         return mapToDto(saved);
     }
 
@@ -100,6 +101,7 @@ public class VendorServiceImpl implements VendorService {
         }
 
         VendorProfile updated = vendorRepo.save(vendor);
+        vendorRepo.flush();
         return mapToDto(updated);
     }
 
@@ -116,6 +118,7 @@ public class VendorServiceImpl implements VendorService {
 
         vendor.setVerified(true);
         VendorProfile saved = vendorRepo.save(vendor);
+        vendorRepo.flush();
 
         return mapToDto(saved);
     }
@@ -145,9 +148,8 @@ public class VendorServiceImpl implements VendorService {
                         new RuntimeException("Owner user not found: " + ownerEmail));
 
         return vendorRepo.findByOwnerId(owner.getId())
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(v -> List.of(mapToDto(v)))
+                .orElseGet(List::of);
     }
 
     // =========================

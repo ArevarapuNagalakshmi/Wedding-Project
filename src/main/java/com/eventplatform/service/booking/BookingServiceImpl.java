@@ -56,9 +56,12 @@ public class BookingServiceImpl implements BookingService {
                 .status(BookingStatus.PENDING)
                 .build();
 
-        bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // Ensure the ID is generated and persisted
+        bookingRepository.flush();
 
-        return mapToDto(booking);
+        return mapToDto(savedBooking);
     }
 
     // READ
@@ -87,6 +90,14 @@ public class BookingServiceImpl implements BookingService {
                 bookingRepository.findByUser_IdAndStatus(userId, bookingStatus);
 
         return bookings.stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponseDto> getBookingsForVendor(Long vendorId) {
+        return bookingRepository.findByVendor_Id(vendorId).stream()
                 .map(this::mapToDto)
                 .toList();
     }

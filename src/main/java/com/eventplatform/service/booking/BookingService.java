@@ -20,6 +20,8 @@ public interface BookingService {
 
     List<BookingResponseDto> getBookingsByStatus(Long userId, String status);
 
+    List<BookingResponseDto> getBookingsForVendor(Long vendorId);
+
     // UPDATE
 
     BookingResponseDto updateBookingStatus(Long bookingId, String status);

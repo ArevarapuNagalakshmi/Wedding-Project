@@ -25,7 +25,7 @@ public class ServicePackageController {
     private final UserRepository userRepository;
 
     // CREATE
-    @PostMapping("/vendor/{vendorId}")
+        @PostMapping("/vendor/{vendorId:[0-9]+}")
     @PreAuthorize("hasRole('VENDOR')")
     public ResponseEntity<ServicePackageDto> create(
             @PathVariable Long vendorId,
@@ -42,7 +42,7 @@ public class ServicePackageController {
         return ResponseEntity.ok(packageService.getPackage(id));
     }
 
-    @GetMapping("/vendor/{vendorId}")
+        @GetMapping("/vendor/{vendorId:[0-9]+}")
     public ResponseEntity<List<ServicePackageDto>> getByVendor(
             @PathVariable Long vendorId) {
 
@@ -51,7 +51,21 @@ public class ServicePackageController {
         );
     }
 
-    @GetMapping("/vendor/{vendorId}/price-range")
+    // Convenience endpoint for current authenticated vendor to fetch their packages
+    @GetMapping("/vendor/my")
+    @PreAuthorize("hasRole('VENDOR')")
+    public ResponseEntity<List<ServicePackageDto>> getMyPackages(Authentication auth) {
+        String username = auth.getName();
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        VendorProfile vendorProfile = vendorProfileRepo.findByOwnerId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Vendor profile not found"));
+
+        return ResponseEntity.ok(packageService.getPackagesByVendor(vendorProfile.getId()));
+    }
+
+        @GetMapping("/vendor/{vendorId:[0-9]+}/price-range")
     public ResponseEntity<List<ServicePackageDto>> byPrice(
             @PathVariable Long vendorId,
             @RequestParam BigDecimal minPrice,
@@ -66,6 +80,7 @@ public class ServicePackageController {
     @GetMapping("/search")
     public ResponseEntity<List<ServicePackageDto>> search(
             @RequestParam(required = false) String name,
+            @RequestParam(required = false, name = "q") String q,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -73,11 +88,20 @@ public class ServicePackageController {
             @RequestParam(required = false) Double minRating,
             @RequestParam(required = false) java.time.LocalDate availableDate) {
 
+        // Accept `q` as an alias for `name` to support frontend clients that send `q`
+        final String resolvedName = (q != null && !q.isBlank()) ? q : name;
+
         return ResponseEntity.ok(
                 packageService.searchPackages(
-                        name, city, category,
+                        resolvedName, city, category,
                         minPrice, maxPrice, minRating, availableDate)
         );
+    }
+
+    // Convenience endpoint to return all packages (used by legacy frontend getAllServices)
+    @GetMapping("/services")
+    public ResponseEntity<List<ServicePackageDto>> getAll() {
+        return ResponseEntity.ok(packageService.searchPackages(null, null, null, null, null, null, null));
     }
 
     // UPDATE

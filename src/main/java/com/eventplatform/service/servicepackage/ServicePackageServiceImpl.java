@@ -42,7 +42,9 @@ public class ServicePackageServiceImpl implements ServicePackageService {
         }
 
         ServicePackage entity = mapToEntity(dto, vendor);
-        return mapToDto(packageRepo.save(entity));
+        packageRepo.save(entity);
+        packageRepo.flush();
+        return mapToDto(entity);
     }
 
     // =========================
@@ -103,20 +105,60 @@ public class ServicePackageServiceImpl implements ServicePackageService {
         String normalizedCity = (city == null || city.isBlank()) ? null : city.trim();
         String normalizedCategory = (category == null || category.isBlank()) ? null : category.trim();
 
-        List<ServicePackage> packages = normalizedName != null
-                ? packageRepo.findByNameContainingIgnoreCase(normalizedName)
-                : packageRepo.findAll();
+        List<ServicePackage> packages = packageRepo.findAll();
 
         return packages.stream()
                 .filter(pkg -> pkg.getVendor() != null && Boolean.TRUE.equals(pkg.getVendor().getVerified()))
+                .filter(pkg -> normalizedName == null || packageMatchesSearch(pkg, normalizedName))
                 .filter(pkg -> normalizedCity == null || normalizedCity.equalsIgnoreCase(pkg.getVendor().getCity()))
-                .filter(pkg -> normalizedCategory == null || normalizedCategory.equalsIgnoreCase(pkg.getVendor().getCategory()))
+                .filter(pkg -> normalizedCategory == null || vendorMatchesCategory(pkg.getVendor(), normalizedCategory))
                 .filter(pkg -> minPrice == null || (pkg.getPrice() != null && pkg.getPrice().compareTo(minPrice) >= 0))
                 .filter(pkg -> maxPrice == null || (pkg.getPrice() != null && pkg.getPrice().compareTo(maxPrice) <= 0))
                 .filter(pkg -> minRating == null || (pkg.getVendor().getRating() != null && pkg.getVendor().getRating() >= minRating))
                 .filter(pkg -> availableDate == null || !availabilityRepo.existsByVendor_IdAndBlockedDate(pkg.getVendor().getId(), availableDate))
                 .map(this::mapToDto)
                 .toList();
+
+    }
+
+    private boolean vendorMatchesCategory(VendorProfile vendor, String category) {
+        if (vendor == null) {
+            return false;
+        }
+
+        if (vendor.getCategory() != null && vendor.getCategory().equalsIgnoreCase(category)) {
+            return true;
+        }
+
+        if (vendor.getCategoryTags() != null) {
+            return vendor.getCategoryTags().stream()
+                    .anyMatch(tag -> tag != null && tag.equalsIgnoreCase(category));
+        }
+
+        return false;
+    }
+
+    private boolean packageMatchesSearch(ServicePackage pkg, String searchTerm) {
+        if (pkg == null) {
+            return false;
+        }
+
+        String lowerSearch = searchTerm.toLowerCase();
+
+        if (pkg.getName() != null && pkg.getName().toLowerCase().contains(lowerSearch)) {
+            return true;
+        }
+
+        if (pkg.getDescription() != null && pkg.getDescription().toLowerCase().contains(lowerSearch)) {
+            return true;
+        }
+
+        if (pkg.getVendor() != null && pkg.getVendor().getBusinessName() != null
+                && pkg.getVendor().getBusinessName().toLowerCase().contains(lowerSearch)) {
+            return true;
+        }
+
+        return false;
     }
 
     // =========================
@@ -135,7 +177,9 @@ public class ServicePackageServiceImpl implements ServicePackageService {
         existing.setDescription(dto.getDescription());
         existing.setImages(dto.getImages());
 
-        return mapToDto(packageRepo.save(existing));
+        packageRepo.save(existing);
+        packageRepo.flush();
+        return mapToDto(existing);
     }
 
     // =========================

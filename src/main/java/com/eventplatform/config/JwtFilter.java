@@ -15,11 +15,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
     private final JwtUtil jwtUtil;
 
     // ✅ THIS METHOD FIXES 403 ERROR
@@ -51,20 +54,22 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
 
-        if (token != null
-                && jwtUtil.validateToken(token)
+        if (token != null && jwtUtil.validateToken(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             Claims claims = jwtUtil.getClaims(token);
 
             String username = claims.getSubject();
-
             String role = claims.get("role", String.class);
 
-            if (role != null) {
+            log.debug("🔐 JWT validated for user: {} with role: {}", username, role);
+
+            if (role != null && !role.isEmpty()) {
 
                 List<SimpleGrantedAuthority> authorities =
                         List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
+                log.debug("✅ Authorities granted: ROLE_{}", role);
 
                 var userDetails =
                         new org.springframework.security.core.userdetails.User(
@@ -85,6 +90,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 );
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+            } else {
+                log.warn("❌ Role is null or empty in JWT for user: {}", username);
             }
         }
 

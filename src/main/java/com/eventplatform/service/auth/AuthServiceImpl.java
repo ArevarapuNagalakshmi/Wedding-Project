@@ -8,8 +8,10 @@ import com.eventplatform.dto.auth.RegisterRequest;
 import com.eventplatform.entity.AadhaarVerification;
 import com.eventplatform.entity.Role;
 import com.eventplatform.entity.User;
+import com.eventplatform.entity.VendorProfile;
 import com.eventplatform.repository.AadhaarVerificationRepository;
 import com.eventplatform.repository.UserRepository;
+import com.eventplatform.repository.VendorProfileRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +28,7 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final VendorProfileRepository vendorProfileRepository;
     private final AadhaarVerificationRepository aadhaarRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -38,8 +41,8 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void register(RegisterRequest req) {
 
-        // Email already exists
-        if (userRepository.existsByEmail(req.getEmail())) {
+        // Email already exists (case-insensitive)
+        if (userRepository.existsByEmailIgnoreCase(req.getEmail().trim())) {
             throw new RuntimeException("Email already exists");
         }
 
@@ -86,6 +89,24 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         userRepository.save(user);
+        // Ensure the user is persisted to database immediately
+        userRepository.flush();
+
+        if (role == Role.VENDOR) {
+            VendorProfile vendorProfile = VendorProfile.builder()
+                    .owner(user)
+                    .businessName((req.getFirstName() + " " + req.getLastName()).trim())
+                    .category("Wedding Services")
+                    .categoryTags(new java.util.ArrayList<>())
+                    .imageUrls(new java.util.ArrayList<>())
+                    .videoUrls(new java.util.ArrayList<>())
+                    .rating(0.0)
+                    .verified(false)
+                    .build();
+
+            vendorProfileRepository.save(vendorProfile);
+            vendorProfileRepository.flush();
+        }
     }
 
     // ================= LOGIN =================
@@ -93,11 +114,30 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public JwtResponse login(LoginRequest req) {
 
-        User user = userRepository
-                .findByEmail(req.getEmailOrPhone())
-                .or(() -> userRepository.findByPhone(req.getEmailOrPhone()))
-                .orElseThrow(() ->
-                        new RuntimeException("Invalid email or password"));
+        if (req.getEmailOrPhone() == null || req.getEmailOrPhone().isBlank()) {
+            throw new RuntimeException("Email or phone is required");
+        }
+
+        String identifier = req.getEmailOrPhone().trim();
+
+        // Try case-insensitive email lookup first
+        var userOpt = userRepository.findByEmailIgnoreCase(identifier);
+
+        // If not an email match, try phone lookup after normalizing digits
+        if (userOpt.isEmpty()) {
+            String digits = identifier.replaceAll("\\D+", "");
+            // strip leading country code '91' if present
+            if (digits.length() == 12 && digits.startsWith("91")) {
+                digits = digits.substring(2);
+            }
+
+            if (digits.length() == 10) {
+                userOpt = userRepository.findByPhone(digits);
+            }
+        }
+
+        User user = userOpt.orElseThrow(() ->
+                new RuntimeException("Invalid email or password"));
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -105,6 +145,8 @@ public class AuthServiceImpl implements AuthService {
                         req.getPassword()
                 )
         );
+
+        ensureVendorProfile(user);
 
         String token = jwtUtil.generateToken(
                 user.getEmail(),
@@ -119,6 +161,25 @@ public class AuthServiceImpl implements AuthService {
                 jwtUtil.getClaims(token).getExpiration().getTime(),
                 user.getRole().name()
         );
+    }
+
+    private void ensureVendorProfile(User user) {
+        if (user.getRole() != Role.VENDOR || vendorProfileRepository.findByOwnerId(user.getId()).isPresent()) {
+            return;
+        }
+
+        VendorProfile vendorProfile = VendorProfile.builder()
+                .owner(user)
+                .businessName((user.getFirstName() + " " + user.getLastName()).trim())
+                .category("Wedding Services")
+                .categoryTags(new java.util.ArrayList<>())
+                .imageUrls(new java.util.ArrayList<>())
+                .videoUrls(new java.util.ArrayList<>())
+                .rating(0.0)
+                .verified(false)
+                .build();
+
+        vendorProfileRepository.saveAndFlush(vendorProfile);
     }
 
     @Override
@@ -136,8 +197,8 @@ public class AuthServiceImpl implements AuthService {
 
         otpService.verifyEmailOtp(request.getEmail(), request.getOtp());
 
-        User user = userRepository.findByEmail(request.getEmail().trim())
-                .orElseThrow(() -> new RuntimeException("User not found with this email"));
+        User user = userRepository.findByEmailIgnoreCase(request.getEmail().trim())
+            .orElseThrow(() -> new RuntimeException("User not found with this email"));
 
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);

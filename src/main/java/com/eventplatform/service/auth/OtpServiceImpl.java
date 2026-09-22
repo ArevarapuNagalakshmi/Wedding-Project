@@ -63,6 +63,7 @@ public class OtpServiceImpl implements OtpService {
                 .build();
 
         otpRepository.save(otpVerification);
+        otpRepository.flush();
 
         emailService.sendOtpEmail(email, otp);
 
@@ -104,6 +105,7 @@ public class OtpServiceImpl implements OtpService {
         record.setOtp(null);
 
         otpRepository.save(record);
+        otpRepository.flush();
 
         System.out.println("Email verified successfully");
     }
@@ -174,6 +176,7 @@ public class OtpServiceImpl implements OtpService {
                 .build();
 
         otpRepository.save(otpVerification);
+        otpRepository.flush();
 
         sendOtpToMobile(mobileNumber, otp);
     }
@@ -212,6 +215,7 @@ public class OtpServiceImpl implements OtpService {
         record.setOtp(null);
 
         otpRepository.save(record);
+        otpRepository.flush();
 
         // activate Aadhaar
         AadhaarVerification aadhaarData = aadhaarRepository
@@ -222,6 +226,7 @@ public class OtpServiceImpl implements OtpService {
         aadhaarData.setActive(true);
 
         aadhaarRepository.save(aadhaarData);
+        aadhaarRepository.flush();
 
         System.out.println("Aadhaar verified successfully");
     }

@@ -58,8 +58,8 @@ public class VendorController {
         List<VendorProfileDto> vendors = vendorService.getVendorsByOwner(user.getUsername());
         VendorProfileDto profile = vendors.stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNPROCESSABLE_ENTITY,
-                        "Vendor profile not found. Please create a vendor profile first by posting to /api/vendors"
+                        HttpStatus.NOT_FOUND,
+                        "Vendor profile not found for this account. Please create a vendor profile first."
                 ));
 
         return ResponseEntity.ok(profile);
@@ -103,8 +103,8 @@ public class VendorController {
         List<VendorProfileDto> vendors = vendorService.getVendorsByOwner(user.getUsername());
         VendorProfileDto existing = vendors.stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNPROCESSABLE_ENTITY,
-                        "Vendor profile not found. Please create a vendor profile first by posting to /api/vendors"
+                        HttpStatus.NOT_FOUND,
+                        "Vendor profile not found for this account. Please create a vendor profile first."
                 ));
 
         return ResponseEntity.ok(
@@ -122,8 +122,8 @@ public class VendorController {
         List<VendorProfileDto> vendors = vendorService.getVendorsByOwner(user.getUsername());
         VendorProfileDto existing = vendors.stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNPROCESSABLE_ENTITY,
-                        "Vendor profile not found. Please create a vendor profile first by posting to /api/vendors"
+                        HttpStatus.NOT_FOUND,
+                        "Vendor profile not found for this account. Please create a vendor profile first."
                 ));
 
         if (files == null || files.length == 0) {

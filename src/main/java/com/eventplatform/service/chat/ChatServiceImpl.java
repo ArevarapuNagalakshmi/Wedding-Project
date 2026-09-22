@@ -7,6 +7,7 @@ import com.eventplatform.repository.ChatMessageRepository;
 import com.eventplatform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,6 +21,7 @@ public class ChatServiceImpl implements ChatService {
     private final UserRepository userRepo;
 
     @Override
+    @Transactional
     public ChatMessageDto send(ChatMessageDto message) {
 
         //  Fetch sender
@@ -39,6 +41,7 @@ public class ChatServiceImpl implements ChatService {
                 .build();
 
         chatRepo.save(chat);
+        chatRepo.flush();
 
         //  Return DTO
         return ChatMessageDto.builder()

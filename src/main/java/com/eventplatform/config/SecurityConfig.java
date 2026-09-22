@@ -73,10 +73,13 @@ public class SecurityConfig {
                         // 🔐 Vendor profile APIs
                         .requestMatchers("/api/vendors/**").hasAnyRole("VENDOR", "ADMIN")
 
+                        // 🔐 Vendor booking feed
+                        .requestMatchers("/api/vendor/bookings/**").hasRole("VENDOR")
+
                         // 🔐 Service Package APIs ✅ FIXED
                         .requestMatchers(HttpMethod.POST, "/api/packages/**").hasRole("VENDOR")
                         .requestMatchers(HttpMethod.PUT, "/api/packages/**").hasRole("VENDOR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/packages/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/packages/**").hasAnyRole("VENDOR", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/packages/**").permitAll()
 
                         // 🔐 Payments

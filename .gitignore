@@ -1,0 +1,10 @@
+target/
+*.log
+compile-log.txt
+compile-output.txt
+compile-status.txt
+hs_err_pid*.log
+
+.idea/
+*.iml
+.vscode/

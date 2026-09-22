@@ -47,7 +47,9 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                 .reason(dto.getReason())
                 .build();
 
-        return mapToDto(availabilityRepo.save(availability));
+        availabilityRepo.save(availability);
+        availabilityRepo.flush();
+        return mapToDto(availability);
     }
 
 
